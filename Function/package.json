@@ -1,0 +1,16 @@
+{
+  "name": "Function",
+  "version": "1.0.0",
+  "description": "【全网首发:已完结】你不知道的『Function』【知识储备】\r https://www.bilibili.com/video/BV1hX4y1M7jo",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jquery": "^3.5.1",
+    "vite": "^2.0.0-beta.29"
+  }
+}

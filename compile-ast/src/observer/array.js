@@ -2,7 +2,7 @@
 *  push新增的对象可能是对象或者数组，所以也需要进行观察，
 *  原数组数据的更改，可能引起页面视图改变，所以也要观察
 */
-import { ARR_METHODS } from "./config";
+import { ARR_METHODS } from "../config";
 import observeArr from "./observeArr";
 //originArrMethods获取到原型
 var originArrMethods = Array.prototype;

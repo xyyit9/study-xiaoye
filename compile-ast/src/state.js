@@ -1,5 +1,5 @@
-import proxyData from './proxy'
-import observe from './observe'
+import proxyData from './observer/proxy'
+import observe from './observer/observe'
 function initState(vm) {
   var options = vm.$options;
   if (options.data) {

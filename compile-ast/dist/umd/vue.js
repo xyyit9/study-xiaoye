@@ -31,6 +31,62 @@
     return _typeof(obj);
   }
 
+  function _slicedToArray(arr, i) {
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+  }
+
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+
+  function _iterableToArrayLimit(arr, i) {
+    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+    var _e = undefined;
+
+    try {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"] != null) _i["return"]();
+      } finally {
+        if (_d) throw _e;
+      }
+    }
+
+    return _arr;
+  }
+
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
+  }
+
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+
   function defineReactiveData(data, key, value) {
     // value可能也是一个对象
     observe(value);
@@ -142,8 +198,247 @@
     observe(vm._data);
   }
 
-  function compileToRenderFunction(html) {
+  /**
+   * 生成AST树
+   */
+  // id="app" id='app' id=app
+  var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 标签名 <my-header></my-header>
+
+  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // <my:header></my:header>
+
+  var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")"); // <div
+
+  var startTagOpen = new RegExp("^<".concat(qnameCapture)); // > />
+
+  var startTagClose = /^\s*(\/?)>/; // </div>
+
+  var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>"));
+
+  function parseHtmlToAst(html) {
     console.log(html);
+    var text,
+        root,
+        currentParent,
+        stack = [];
+
+    while (html) {
+      var textEnd = html.indexOf('<'); // <尖括号在等于0的位置
+
+      if (textEnd === 0) {
+        var startTagMatch = parseStartTag(); // 进行type和属性解析 <div id="app" style="color: red; font-size: 20px">
+
+        if (startTagMatch) {
+          start(startTagMatch.tagName, startTagMatch.attrs);
+          continue;
+        } // 进行结束标签解析 </div>
+
+
+        var endTagMatch = html.match(endTag);
+
+        if (endTagMatch) {
+          advance(endTagMatch[0].length);
+          end(endTagMatch[1]);
+          continue;
+        }
+      } // <尖括号在大于0的位置，说明是文本
+
+
+      if (textEnd > 0) {
+        text = html.substring(0, textEnd);
+
+        if (text) {
+          advance(text.length);
+          chars(text);
+        }
+      }
+    }
+
+    function parseStartTag() {
+      // 匹配<div
+      var start = html.match(startTagOpen);
+      var end, attr;
+
+      if (start) {
+        var match = {
+          tagName: start[1],
+          //div
+          attrs: []
+        }; // 匹配上的<div就被删除
+
+        advance(start[0].length); // 解析属性
+
+        while (!(end = html.match(startTagClose)) && (attr = html.match(attribute))) {
+          match.attrs.push({
+            name: attr[1],
+
+            /**
+             * id="app"  attr[3]为app
+             * id='app'  attr[4]为app
+             * id=app    attr[5]为app
+             *  */
+            value: attr[3] || attr[4] || attrs[5]
+          });
+          advance(attr[0].length);
+        } // 解析尾括号，<div>的>
+
+
+        if (end) {
+          advance(end[0].length);
+          return match;
+        }
+      }
+    }
+
+    function advance(n) {
+      html = html.substring(n);
+    }
+
+    function start(tagName, attrs) {
+      // console.log('---------开始----------')
+      // console.log(tagName, attrs)
+      var element = createASTElement(tagName, attrs);
+
+      if (!root) {
+        root = element;
+      } // text节点中可以使用
+
+
+      currentParent = element;
+      stack.push(element);
+    }
+
+    function end(tagName) {
+      // console.log('---------结束----------')
+      // console.log(tagName)
+      var element = stack.pop();
+      currentParent = stack[stack.length - 1];
+
+      if (currentParent) {
+        element.parent = currentParent;
+        currentParent.children.push(element);
+      }
+    }
+
+    function chars(text) {
+      // console.log('---------文本----------')
+      // console.log(text)
+      text = text.trim();
+
+      if (text.length > 0) {
+        currentParent.children.push({
+          type: 3,
+          text: text
+        });
+      }
+    }
+
+    function createASTElement(tagName, attrs) {
+      return {
+        tag: tagName,
+        type: 1,
+        children: [],
+        attrs: attrs,
+        parent: parent
+      };
+    }
+
+    console.log(root);
+    return root;
+  }
+
+  /**
+   * AST树转换成render函数
+   */
+  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
+
+  function generate(el) {
+    var children = geChildren(el);
+    var code = "_c('".concat(el.tag, "', \n    ").concat(el.attrs.length > 0 ? "".concat(formatProps(el.attrs)) : 'undefined', "\n    ").concat(children ? ",".concat(children) : '', ")");
+    return code;
+  }
+
+  function geChildren(el) {
+    var children = el.children;
+
+    if (children) {
+      return children.map(function (c) {
+        return generateChild(c);
+      }).join(',');
+    }
+  }
+
+  function generateChild(node) {
+    if (node.type === 1) {
+      return generate(node);
+    } else if (node.type === 3) {
+      var text = node.text;
+
+      if (!defaultTagRE.test(text)) {
+        return "_v(".concat(JSON.stringify(text), ")");
+      }
+
+      var match,
+          index,
+          lastIndex = defaultTagRE.lastIndex = 0,
+          textArr = []; // 你好 {{name}} 欢迎
+
+      while (match = defaultTagRE.exec(text)) {
+        index = match.index; //3
+
+        if (index > lastIndex) {
+          // 你好
+          textArr.push(JSON.stringify(text.slice(lastIndex, index)));
+        } // {{name}}
+
+
+        textArr.push("_s(".concat(match[1].trim(), ")"));
+        lastIndex = index + match[0].length; //11
+      }
+
+      if (lastIndex < text.length) {
+        // 欢迎
+        textArr.push(JSON.stringify(text.slice(lastIndex)));
+      }
+
+      return "_v(".concat(textArr.join('+'), ")");
+    }
+  }
+
+  function formatProps(attrs) {
+    var attrStr = '';
+
+    for (var i = 0; i < attrs.length; i++) {
+      var attr = attrs[i];
+
+      if (attr.name === 'style') {
+        (function () {
+          var styleAttrs = {}; // attr.value的值为string "color: red; font-size: 20px"
+
+          attr.value.split(';').map(function (styleAttr) {
+            var _styleAttr$split = styleAttr.split(':'),
+                _styleAttr$split2 = _slicedToArray(_styleAttr$split, 2),
+                key = _styleAttr$split2[0],
+                value = _styleAttr$split2[1];
+
+            styleAttrs[key] = value;
+          }); // JSON.stringify(styleAttrs)的值为{"color":" red"," font-size":" 20px"}
+          // 与attr.value的差异在于，每个key，value值都加上了引号，且有大括号
+
+          attr.value = styleAttrs;
+        })();
+      }
+
+      attrStr += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
+    }
+
+    return "{".concat(attrStr.slice(0, -1), "}");
+  }
+
+  function compileToRenderFunction(html) {
+    var ast = parseHtmlToAst(html);
+    var code = generate(ast);
+    var render = new Function("with(this){ return ".concat(code, "}"));
+    console.log(render);
   }
 
   function initMixin(Vue) {
@@ -163,12 +458,13 @@
       var vm = this,
           options = vm.$options;
       el = document.querySelector(el);
-      vm.$el = el; // render => template =>el
+      vm.$el = el; // render > template > html式
 
       if (!options.render) {
         var template = options.template;
 
         if (!template && el) {
+          // outerHTML是包含自己的node节点
           template = el.outerHTML;
         }
 

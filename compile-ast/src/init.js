@@ -19,14 +19,15 @@ function initMixin(Vue) {
       options = vm.$options
     el = document.querySelector(el)
     vm.$el = el
-    // render => template =>el
+    // render > template > html式
     if (!options.render) {
       let template = options.template
 
       if (!template && el) {
+        // outerHTML是包含自己的node节点
         template = el.outerHTML
       }
-
+      
       const render = compileToRenderFunction(template)
       options.render = render
     }

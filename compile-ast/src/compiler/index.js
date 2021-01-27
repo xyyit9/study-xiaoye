@@ -4,7 +4,7 @@ function compileToRenderFunction(html) {
   const ast = parseHtmlToAst(html)
   const code =generate(ast)
   const render = new Function(`with(this){ return ${code}}`)
-  console.log(render)
+  return render
 }
 
 export { compileToRenderFunction }

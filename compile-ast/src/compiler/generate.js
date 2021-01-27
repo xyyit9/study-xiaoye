@@ -4,9 +4,9 @@
 const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g
 function generate(el) {
   let children = geChildren(el)
-  let code = `_c('${el.tag}', 
-    ${el.attrs.length > 0 ? `${formatProps(el.attrs)}` : 'undefined'}
-    ${children ? `,${children}` : ''})`
+  let code = `_c('${el.tag}', ${
+    el.attrs.length > 0 ? `${formatProps(el.attrs)}` : 'undefined'
+  }${children ? `,${children}` : ''})`
   return code
 }
 
@@ -39,13 +39,13 @@ function generateChild(node) {
         textArr.push(JSON.stringify(text.slice(lastIndex, index)))
       }
       // {{name}}
-      textArr.push(`_s(${match[1].trim()})`);
+      textArr.push(`_s(${match[1].trim()})`)
       lastIndex = index + match[0].length //11
     }
 
-    if(lastIndex <text.length){
-        // 欢迎
-        textArr.push(JSON.stringify(text.slice(lastIndex)))
+    if (lastIndex < text.length) {
+      // 欢迎
+      textArr.push(JSON.stringify(text.slice(lastIndex)))
     }
     return `_v(${textArr.join('+')})`
   }
@@ -72,5 +72,4 @@ function formatProps(attrs) {
   return `{${attrStr.slice(0, -1)}}`
 }
 
-function vrender() {}
 export { generate }

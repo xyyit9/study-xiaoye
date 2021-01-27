@@ -1,0 +1,16 @@
+{
+  "name": "compile-tree",
+  "version": "1.0.0",
+  "description": "【全网首发:更新中】颠覆认知的『前端面试题合集』【高薪备战必备]\r [https://www.bilibili.com/video/BV16p4y1x7Ew?p=6]",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^2.0.7"
+  }
+}

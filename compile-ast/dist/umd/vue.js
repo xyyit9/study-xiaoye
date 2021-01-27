@@ -353,7 +353,7 @@
 
   function generate(el) {
     var children = geChildren(el);
-    var code = "_c('".concat(el.tag, "', \n    ").concat(el.attrs.length > 0 ? "".concat(formatProps(el.attrs)) : 'undefined', "\n    ").concat(children ? ",".concat(children) : '', ")");
+    var code = "_c('".concat(el.tag, "', ").concat(el.attrs.length > 0 ? "".concat(formatProps(el.attrs)) : 'undefined').concat(children ? ",".concat(children) : '', ")");
     return code;
   }
 
@@ -438,7 +438,61 @@
     var ast = parseHtmlToAst(html);
     var code = generate(ast);
     var render = new Function("with(this){ return ".concat(code, "}"));
-    console.log(render);
+    return render;
+  }
+
+  function patch(oldNode, vNode) {
+    var el = createElement(vNode),
+        parentElement = oldNode.parentNode;
+    parentElement.insertBefore(el, oldNode.newSibling);
+    parentElement.removeChild(oldNode);
+  }
+
+  function createElement(vnode) {
+    var tag = vnode.tag,
+        props = vnode.props,
+        children = vnode.children,
+        text = vnode.text;
+
+    if (typeof tag === 'string') {
+      vnode.el = document.createElement(tag);
+      updateProps(vnode);
+      children.map(function (child) {
+        vnode.el.appendChild(createElement(child));
+      });
+    } else {
+      vnode.el = document.createTextNode(text);
+    }
+
+    return vnode.el;
+  }
+
+  function updateProps(vnode) {
+    var el = vnode.el,
+        newProps = vnode.props || {};
+
+    for (var key in newProps) {
+      if (key === 'style') {
+        for (var sKey in newProps.style) {
+          el.style[sKey] = newProps.style[sKey];
+        }
+      } else if (key === 'class') {
+        el.className = el["class"];
+      } else {
+        el.setAttribute(key, newProps[key]);
+      }
+    }
+  }
+
+  function mountComponent(vm) {
+    vm._update(vm._render());
+  }
+
+  function lifecycleMixin(Vue) {
+    Vue.prototype._update = function (vnode) {
+      var vm = this;
+      patch(vm.$el, vnode);
+    };
   }
 
   function initMixin(Vue) {
@@ -471,6 +525,54 @@
         var render = compileToRenderFunction(template);
         options.render = render;
       }
+
+      mountComponent(vm);
+    };
+  }
+
+  function createElement$1(tag) {
+    var attrs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+    for (var _len = arguments.length, children = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+      children[_key - 2] = arguments[_key];
+    }
+
+    return vnode(tag, attrs, children);
+  }
+
+  function createTextVnode(text) {
+    return vnode(undefined, undefined, undefined, text);
+  }
+
+  function vnode(tag, props, children, text) {
+    return {
+      tag: tag,
+      props: props,
+      children: children,
+      text: text
+    };
+  }
+
+  function renderMixin(Vue) {
+    Vue.prototype._c = function () {
+      return createElement$1.apply(void 0, arguments);
+    };
+
+    Vue.prototype._s = function (value) {
+      if (value == undefined) return;
+      return _typeof(value) === 'object' ? JSON.stringify(value) : value;
+    };
+
+    Vue.prototype._v = function (text) {
+      return createTextVnode(text);
+    };
+
+    Vue.prototype._render = function () {
+      var vm = this,
+          render = vm.$options.render;
+      var vnode = render.call(vm);
+      console.log('vnode', vnode);
+      return vnode;
     };
   }
 
@@ -484,6 +586,8 @@
   }
 
   initMixin(Vue);
+  lifecycleMixin(Vue);
+  renderMixin(Vue);
 
   return Vue;
 

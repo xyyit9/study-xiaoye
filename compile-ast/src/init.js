@@ -19,6 +19,7 @@ function initMixin(Vue) {
     const vm = this,
       options = vm.$options
     el = document.querySelector(el)
+    console.log('el', el)
     vm.$el = el
     // render > template > html式
     if (!options.render) {

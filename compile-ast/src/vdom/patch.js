@@ -5,6 +5,7 @@ function patch(oldNode, vNode) {
   parentElement.removeChild(oldNode)
 }
 
+//将vnode生成真实的dom节点
 function createElement(vnode) {
   const { tag, props, children, text } = vnode
   if (typeof tag === 'string') {

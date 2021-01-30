@@ -446,7 +446,8 @@
         parentElement = oldNode.parentNode;
     parentElement.insertBefore(el, oldNode.newSibling);
     parentElement.removeChild(oldNode);
-  }
+  } //将vnode生成真实的dom节点
+
 
   function createElement(vnode) {
     var tag = vnode.tag,
@@ -490,7 +491,8 @@
 
   function lifecycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
-      var vm = this;
+      var vm = this; //传入真实的dom节点，和新的虚拟dom节点
+
       patch(vm.$el, vnode);
     };
   }
@@ -512,6 +514,7 @@
       var vm = this,
           options = vm.$options;
       el = document.querySelector(el);
+      console.log('el', el);
       vm.$el = el; // render > template > html式
 
       if (!options.render) {

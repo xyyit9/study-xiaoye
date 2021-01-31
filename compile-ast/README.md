@@ -2,8 +2,9 @@
 
 https://www.bilibili.com/video/BV1Rf4y1S7RN
 
-1.获取到template
-2.template -> AST树
-3.AST树 -> render函数 -> _c _v _s
-4.render函数 -> 虚拟节点
-5.设置patch -> 打补丁到真实DOM
+1. 数据劫持
+2. 获取到template
+3. template -> AST树
+4. AST树 -> render函数 -> _c _v _s
+5. render函数 -> 虚拟节点
+6. 设置patch -> 打补丁到真实DOM

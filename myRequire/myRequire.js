@@ -11,7 +11,7 @@ function myRequire(id) {
       ${code}
     })(myRequire, module, exports, dirname, filepath)`;
   eval(code);
-  return module.exports || exports
+  return module.export || exports
 }
 
 var obj = myRequire('./myModule.js')
